@@ -1,0 +1,17 @@
+[GLOBAL]
+pants_version = "2.23.1"
+
+[python]
+interpreter_constraints = ["CPython>=3.8,<3.12"]  # Match AWS Lambda runtime
+enable_resolves = true
+resolves = { python-default = "requirements.txt" }
+
+[tailor]
+ignore_patterns = ["*.venv", "__pycache__"]
+
+[backend]
+# Enable Python and AWS Lambda-specific plugins
+packages = [
+    "pants.backend.python",
+    "pants.backend.awslambda.python",
+]
