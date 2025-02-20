@@ -2,6 +2,7 @@
 pants_version = "2.23.1"
 backend_packages = [
 #  "pants.backend.shell",
+  "pants.backend.docker",
   "pants.backend.python",
 #  "pants.backend.python.lint.black",
   "pants.backend.awslambda.python",
@@ -11,6 +12,7 @@ backend_packages = [
 interpreter_constraints = ["==3.10.*"]  # Match AWS Lambda runtime
 enable_resolves = true
 resolves = { python-default = "requirements.txt" }
+
 
 #
 #[awslambda]

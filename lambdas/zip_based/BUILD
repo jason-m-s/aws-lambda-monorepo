@@ -4,6 +4,12 @@
 python_aws_lambda_function(
     name="lambda",
     handler="handler.py:test_handler",
+    architecture="x86_64",
+    output_path='${spec_path_normalized}/zome.zip'
 )
 
 python_sources()
+
+python_requirements(
+    name="reqs",
+)
