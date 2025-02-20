@@ -17,3 +17,8 @@ Ex. `python -c "import sys; sys.path.insert(0, 'dist/lambdas.zip_based/lambda.zi
 If you want to pass any arguments, you can pass them as a dictionary to the handler function.
 
 Ex. `python -c "import sys; sys.path.insert(0, 'dist/lambdas.zip_based/lambda.zip'); from lambda_function import handler; handler(None, {'name': 'test'})"`
+
+## How to generate layers (only if the zip file reaches a point where it is too big)
+```bash
+pants package  lambdas/zip_based/:layer lambdas/zip_based/:lambda
+```
