@@ -22,3 +22,10 @@ Ex. `python -c "import sys; sys.path.insert(0, 'dist/lambdas.zip_based/lambda.zi
 ```bash
 pants package  lambdas/zip_based/:layer lambdas/zip_based/:lambda
 ```
+
+What we can do with pants build system:
+- zip a lambda function
+- create a docker image for a lambda function
+- resolve transitive dependencies automatically
+- automatically provides code navigability since we can just setup modules as a normal python monolith
+
