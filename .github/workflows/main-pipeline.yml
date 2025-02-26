@@ -80,6 +80,9 @@ jobs:
           echo "CURRENT_BRANCH=$CURRENT_BRANCH" >> $GITHUB_ENV
 
       # todo: need improvement... prevent echoing, filter branches instead of pushing to env
+      # also consider EU and CA regions
+      # some goes only to US prod/dev
+
       # Handle direct branch matching (devX/develop and master)
       - name: Match Direct Branches
         if: ${{ matrix.branch == env.CURRENT_BRANCH }}
