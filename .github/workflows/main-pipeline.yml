@@ -1,0 +1,105 @@
+name: CI/CD for Lambdas
+
+on:
+  push:
+    branches:
+      - "dev[0-9]*/develop"  # Matches dev1/develop, dev10/develop, etc.
+      - "release/[0-9.]*"    # Matches release/8.60.0, release/9.0.1, etc.
+      - "HF/[0-9.]*"         # Matches HF/8.60.1, HF/9.1.2, etc.
+      - "master"             # Matches production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Lambda
+        run: |
+          pants package lambdas/container_based/:lambda
+
+      - name: Run Tests
+        run: |
+          pants test ::
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          # Explicit branch matching for devX/develop
+          - branch: "dev1/develop"
+            stack: "dev1-stack"
+            environment: "dev1"
+            environment_group: "dev"
+          - branch: "dev10/develop"
+            stack: "dev10-stack"
+            environment: "dev10"
+            environment_group: "dev"
+
+          # OR-based pattern for staging branches
+          - pattern: "^(release|HF)/[0-9.]+$"
+            stack: "staging-stack"
+            environment: "staging"
+            environment_group: "staging"
+
+          # Explicit branch match for master
+          - branch: "master"
+            stack: "production-stack"
+            environment: "production"
+            environment_group: "production"
+
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Determine Current Branch
+        id: get-branch
+        run: |
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          echo "CURRENT_BRANCH=$CURRENT_BRANCH" >> $GITHUB_ENV
+
+      # todo: need improvement... prevent echoing, filter branches instead of pushing to env
+      # Handle direct branch matching (devX/develop and master)
+      - name: Match Direct Branches
+        if: ${{ matrix.branch == env.CURRENT_BRANCH }}
+        run: |
+          echo "STACK=${{ matrix.stack }}" >> $GITHUB_ENV
+          echo "ENVIRONMENT=${{ matrix.environment }}" >> $GITHUB_ENV
+          echo "ENV_GROUP=${{ matrix.environment_group }}" >> $GITHUB_ENV
+
+      # Handle staging branch pattern matching (release/X.Y.Z, HF/X.Y.Z)
+      - name: Match Staging Branches (Pattern Matching)
+        if: startsWith(github.ref, 'release/') || startsWith(github.ref, 'HF/')
+        run: |
+          echo "STACK=staging-stack" >> $GITHUB_ENV
+          echo "ENVIRONMENT=staging" >> $GITHUB_ENV
+          echo "ENV_GROUP=staging" >> $GITHUB_ENV
+
+      - name: Fetch AWS Parameters (Secrets & Configs)
+        run: |
+          aws ssm get-parameters-by-path --path "/cdk/${{ env.ENV_GROUP }}" --with-decryption --query "Parameters[*].{Name:Name,Value:Value}" --output text
+
+      - name: Deploy to AWS CDK
+        run: |
+          npx cdk deploy --context stack=${{ env.STACK }}
